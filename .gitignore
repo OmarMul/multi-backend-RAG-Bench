@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+RAG-Bench-Build-Plan.md
+/data
+/test
