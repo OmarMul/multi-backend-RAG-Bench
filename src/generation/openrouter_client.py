@@ -1,13 +1,14 @@
 """OpenRouter generation client for multi-model LLM completions."""
 
 
-from typing import Optional, List, Dict
+import time
+from typing import Optional, List, Dict, Any
 from openrouter import OpenRouter
 from src.config import settings
 
 
 class OpenRouterClient:
-    """Wrapper around the official OpenRouter SDK for RAG generation."""
+    """Wrapper around the official OpenRouter SDK supporting multi-model generation."""
     
     def __init__(
         self,
@@ -50,21 +51,80 @@ class OpenRouterClient:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_content},
         ]
-        with OpenRouter(api_key=self.api_key) as client:
-            response = client.chat.send(
-                model=active_model,
-                messages=messages,
+
+        try:
+            with OpenRouter(api_key=self.api_key) as client:
+                response = client.chat.send(
+                    model=active_model,
+                    messages=messages,
+                    temperature=temperature,
+                )
+                if response.choices and len(response.choices) > 0:
+                    return response.choices[0].message.content or ""
+                return "no content returned by model"
+        except Exception as e:
+            return f"[Error with model '{active_model}']: {e}"
+
+    def generate_multi_model(
+        self,
+        prompt: str,
+        context: str = "",
+        models: Optional[List[str]] = None,
+        temperature: float = 0.3,
+    ) -> Dict[str, Dict[str, Any]]:
+        """Query multiple models concurrently/sequentially and compare answers + latencies."""
+
+        target_models = models or [
+            "openai/gpt-4o-mini",
+            "cohere/north-mini-code:free",
+            "meta-llama/llama-3.3-70b-instruct",
+        ]
+
+        results: Dict[str, Dict[str, Any]] = {}
+
+        for model_name in target_models:
+            start_time = time.perf_counter()
+            answer = self.generate(
+                prompt=prompt,
+                context=context,
+                model=model_name,
                 temperature=temperature,
             )
-            if response.choices and len(response.choices) > 0:
-                return response.choices[0].message.content or ""
-            return ""
+            elapsed = time.perf_counter() - start_time
+            results[model_name] = {
+                "answer": answer,
+                "latency_sec": round(elapsed, 4),
+            }
+        return results
+
+
+
 
 
 if __name__ == "__main__":
     client = OpenRouterClient()
-    answer = client.generate(
-        prompt="Explain what a vector database is in one sentence.",
-        model="openai/gpt-4o-mini"
+    test_context = (
+        "Agentic AI systems combine perception, memory retrieval, tool execution, "
+        "and goal-directed planning to operate autonomously in complex environments."
     )
-    print(f"Generated Response:\n{answer}")
+    test_question = "What are the essential building blocks of Agentic AI?"
+    print("=" * 60)
+    print("🤖 Multi-Model Generation Comparison via OpenRouter")
+    print(f"Question: '{test_question}'")
+    print("=" * 60)
+    # Compare 3 different model families (OpenAI, Google Gemini, Meta Llama)
+    benchmark_models = [
+        "openai/gpt-4o-mini",
+        "cohere/north-mini-code:free",
+        "meta-llama/llama-3.3-70b-instruct",
+    ]
+    results = client.generate_multi_model(
+        prompt=test_question,
+        context=test_context,
+        models=benchmark_models,
+    )
+    for model, data in results.items():
+        print(f"\n🧠 Model: {model}")
+        print(f"⏱️  Latency: {data['latency_sec']}s")
+        print(f"💬 Answer:\n{data['answer']}")
+        print("-" * 60)

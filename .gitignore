@@ -217,5 +217,21 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 RAG-Bench-Build-Plan.md
+RAG-Bench-Build-Plan-up.md
 /data
 /test
+
+# Environment variables & secrets (CRITICAL)
+.env
+.env.local
+*.env
+
+# Vector databases & local storage
+data/chroma_db/
+*.sqlite3
+*.db
+
+# Virtual environments
+.venv/
+venv/
+ENV/

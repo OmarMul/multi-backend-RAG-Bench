@@ -54,4 +54,14 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/rag_bench"
 
 
+    # Tracing & Observability
+    ENABLE_TRACING: bool = True
+    LANGCHAIN_TRACING_V2: bool = True
+    LANGCHAIN_API_KEY: Optional[str] = None
+    LANGCHAIN_PROJECT: str = "rag-bench"
+    LANGFUSE_PUBLIC_KEY: Optional[str] = None
+    LANGFUSE_SECRET_KEY: Optional[str] = None
+    LANGFUSE_HOST: str = "https://cloud.langfuse.com"
+    LANGFUSE_BASE_URL: Optional[str] = None
+
 settings = Settings()
